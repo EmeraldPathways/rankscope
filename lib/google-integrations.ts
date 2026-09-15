@@ -8,6 +8,8 @@ type RuntimeEnv = {
   GA4_PROPERTY_ID?: string;
   DATAFORSEO_LOGIN?: string;
   DATAFORSEO_PASSWORD?: string;
+  OPENAI_API_KEY?: string;
+  OPENAI_MODEL?: string;
 };
 
 export function runtimeEnv(): RuntimeEnv {
