@@ -13,3 +13,10 @@ export const assistantThreads = sqliteTable("assistant_threads", {
   messages: text("messages").notNull().default("[]"),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const googleConnections = sqliteTable("google_connections", {
+  workspaceKey: text("workspace_key").primaryKey(),
+  refreshTokenCiphertext: text("refresh_token_ciphertext").notNull(),
+  scopes: text("scopes").notNull().default(""),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

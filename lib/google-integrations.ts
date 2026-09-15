@@ -1,3 +1,5 @@
+import { decryptRefreshToken, loadGoogleConnection } from "./google-oauth";
+
 type RuntimeEnv = {
   RANKSCOPE_OWNER_EMAIL?: string;
   GOOGLE_CLIENT_ID?: string;
@@ -10,6 +12,8 @@ type RuntimeEnv = {
   DATAFORSEO_PASSWORD?: string;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
+  GOOGLE_OAUTH_REDIRECT_URI?: string;
+  GOOGLE_TOKEN_ENCRYPTION_KEY?: string;
 };
 
 export function runtimeEnv(): RuntimeEnv {
@@ -40,12 +44,26 @@ export function requireOwner(request: Request): Response | null {
   return null;
 }
 
-export function googleConnectorStatus() {
+export function workspaceKey(request: Request) {
+  return request.headers.get("oai-authenticated-user-email")?.trim().toLowerCase() || "";
+}
+
+export async function googleConnectorStatus(request: Request) {
   const values = runtimeEnv();
+  let storedConnection = false;
+  let storageReady = true;
+  const key = workspaceKey(request);
+  if (key && values.GOOGLE_TOKEN_ENCRYPTION_KEY) {
+    try {
+      storedConnection = Boolean(await loadGoogleConnection(key));
+    } catch {
+      storageReady = false;
+    }
+  }
   const oauth = Boolean(
     values.GOOGLE_CLIENT_ID &&
       values.GOOGLE_CLIENT_SECRET &&
-      values.GOOGLE_REFRESH_TOKEN,
+      (values.GOOGLE_REFRESH_TOKEN || storedConnection),
   );
 
   return {
@@ -55,15 +73,28 @@ export function googleConnectorStatus() {
     searchConsole: oauth && Boolean(values.GSC_SITE_URL),
     analytics: oauth && Boolean(values.GA4_PROPERTY_ID),
     seoData: Boolean(values.DATAFORSEO_LOGIN && values.DATAFORSEO_PASSWORD),
+    googleOAuthReady: Boolean(values.GOOGLE_CLIENT_ID && values.GOOGLE_CLIENT_SECRET),
+    googleConnected: Boolean(values.GOOGLE_REFRESH_TOKEN || storedConnection),
+    googleConnectionStored: storedConnection,
+    googleStorageReady: storageReady,
   };
 }
 
-export async function getGoogleAccessToken(): Promise<string> {
+export async function getGoogleAccessToken(workspace?: string): Promise<string> {
   const values = runtimeEnv();
+  let refreshToken = values.GOOGLE_REFRESH_TOKEN;
+  if (workspace && values.GOOGLE_TOKEN_ENCRYPTION_KEY) {
+    try {
+      const row = await loadGoogleConnection(workspace);
+      if (row) refreshToken = await decryptRefreshToken(row.refreshTokenCiphertext, values.GOOGLE_TOKEN_ENCRYPTION_KEY);
+    } catch (error) {
+      if (!refreshToken) throw error;
+    }
+  }
   if (
     !values.GOOGLE_CLIENT_ID ||
     !values.GOOGLE_CLIENT_SECRET ||
-    !values.GOOGLE_REFRESH_TOKEN
+    !refreshToken
   ) {
     throw new Error("Google OAuth credentials are incomplete.");
   }
@@ -71,7 +102,7 @@ export async function getGoogleAccessToken(): Promise<string> {
   const body = new URLSearchParams({
     client_id: values.GOOGLE_CLIENT_ID,
     client_secret: values.GOOGLE_CLIENT_SECRET,
-    refresh_token: values.GOOGLE_REFRESH_TOKEN,
+    refresh_token: refreshToken,
     grant_type: "refresh_token",
   });
   const response = await fetch("https://oauth2.googleapis.com/token", {

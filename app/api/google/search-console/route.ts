@@ -2,6 +2,7 @@ import {
   getGoogleAccessToken,
   requireOwner,
   runtimeEnv,
+  workspaceKey,
 } from "../../../../lib/google-integrations";
 
 export async function GET(request: Request) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const accessToken = await getGoogleAccessToken();
+    const accessToken = await getGoogleAccessToken(workspaceKey(request));
     const end = new Date();
     const start = new Date(end);
     start.setUTCDate(start.getUTCDate() - 28);

@@ -10,7 +10,7 @@ RankScope must always be restored from its source repository. Do not recreate th
 4. Install exactly from the lockfile with `npm ci`.
 5. Run `npm run verify:project`. Stop if it reports missing files, a missing manifest, or missing migrations.
 6. Run `npm test` before publishing.
-7. Keep Google and SEO credentials in Sites runtime environment variables. Never store them in Git.
+7. Keep Google and SEO credentials in Sites runtime environment variables. Never store them in Git. Native Google connection requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, `GSC_SITE_URL`, and `GA4_PROPERTY_ID`; `GOOGLE_REFRESH_TOKEN` remains supported as a legacy fallback.
 8. Push the complete source, package the exact pushed commit, save a Sites version, and deploy that saved version.
 9. After deployment, confirm the D1 database still contains `workspace_snapshots` and test the owner-only workspace endpoint.
 

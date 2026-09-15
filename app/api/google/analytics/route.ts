@@ -2,6 +2,7 @@ import {
   getGoogleAccessToken,
   requireOwner,
   runtimeEnv,
+  workspaceKey,
 } from "../../../../lib/google-integrations";
 
 export async function GET(request: Request) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const accessToken = await getGoogleAccessToken();
+    const accessToken = await getGoogleAccessToken(workspaceKey(request));
     const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(propertyId)}:runReport`, {
       method: "POST",
       headers: {
